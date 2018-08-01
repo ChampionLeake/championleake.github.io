@@ -79,13 +79,13 @@ It shouldn't be a challenge to pick a title to observe. I'll also be looking at 
 <br><br>
 The word "Check" should ring a bell. The word "Sum" is like the total of some numbers or bytes. <del>Maybe adding if you're a mathematician</del> ALWAYS adding. So if you really put those 2 meanings together, you can tell they're checking something. But for what purpose? It's to ensure a file or a section in a file is not corrupted or tampered with. Without checksums, programs/applications would be extremly vulnerable to simple attacks.
 <br><br>
-Editing a savefile ith checksums without actually patching those checksum bytes will normally make the game delete or rewrite the save. So that's what we need to take care of before we start editing whatever we please. Let's create some saves and compare them so we can locate the checksum(s) for "WordSearcher". It's common for some DSiWare titles to use a familiar CRC algorithm which gives you a greater chance to patch checksums easily with <a href="https://mh-nexus.de/en/hxd/">HxD</a> or other checksum calculators.
+Editing a savefile with checksums without actually patching those checksum bytes will normally make the game delete or rewrite the save. So that's what we need to take care of before we start editing whatever we please. Let's create some saves and compare them so we can locate the checksum(s) for "WordSearcher". It's common for some DSiWare titles to use a familiar CRC algorithm which gives you a greater chance to patch checksums easily with <a href="https://mh-nexus.de/en/hxd/">HxD</a> or other checksum calculators.
 <br><br>
 So, I'm going to create 2 savefiles (two "public.sav"s). One will contain the username "AAAAAAAA", and the other will contain "AAAAAAAB". We'll eventually use <a href="https://www.cjmweb.net/vbindiff/">VBinDiff</a> to compare the two files and look for differences. We first have to fetch the real save that's mounted within the "public.sav" file. This can be done with <a href="https://www.osforensics.com/tools/mount-disk-images.html">OSFMount</a> or any program that can mount disk images.
 <br><br><br>
 You must have a DSi NAND dump (that you dumped yourself). <a href="https://github.com/Wintermute">Wintermute's</a> <a href="https://dsi.cfw.guide/assets/files/fwTool.nds">FWTOOL 2.0.0</a>, homebrew application, should help you dump your NAND. The last things you'll need are your DSi's CID and ConsoleID, which you can obtain by looking at <a href=https://gbatemp.net/threads/dsi-downgrading-the-complete-guide.393682/">Gadorach's downgrading guide</a>.
 <br><br>I assume that you already have the things you need. I'll quickly go over what you need to do when mounting your NAND to fetch the public.sav(s).
-<br>Your NAND needs to be decrypted before any mounting should occur.
+<br><br>Your NAND needs to be decrypted before any mounting should occur.
 <ul>
 <li>Open up "OSFMount".</li>
 <li>Select "Mount New...".</li>
@@ -114,8 +114,10 @@ Copy the file that's mounted from the savefile and place it somewhere safe. Repe
 We can now move onto using VBinDiff to compare the two savefiles.
 <br><br>
 Select the two savefiles and drag them to the VBinDiff program and it should give you this.
+<center>
 <img src="../articles/assets/VBinDiff-ScreenShot.JPG">
 <img src="../articles/assets/VBinDiff-ScreenShot2.JPG">
+</center>
 <br>
 We seem to have found the differences in these saves. By pressing Enter or manually scrolling, it'll find another difference in the saves. At offset 0x0, for both files, it seems we might be dealing with CRC32, considering that the first 4 bytes are different within the saves. CRC8/Checksum-8 would be 1 byte long, CRC16/Checksum-16 would be 2 bytes long, and of course CRC32/Checkum-32 would be 4 bytes long. Since we now know where the checksum is located, we're going to start investigating what and why those bytes are what they are. Let's open our saves in <a href="https://mh-nexus.de/en/hxd/">HxD</a>.
 <br><br>
@@ -137,7 +139,7 @@ Now what do you notice about the yellow highlighted areas in the screenshot abov
 <br>
 Note how the bytes "C2 EC 62 15" in the save are backwards from the checksum "15 62 EC C2". To make sure this is correct we're going to take a look at the other file to make sure.
 <img src="../articles/assets/HxD-ScreenShot3.JPG">
-Once again, the bytes seem to be identical but in little-endian format. We can confirm that the game does use a common CRC32 polynomial algorithm. From there, you can basically use an open-source CRC patcher - just edit/ddd the offsets, and there you go, you have yourself a CRC patcher for your game. Now that we cracked the checksum of this game, we can move on to the next section. Keep in mind that not all games will be easy with this method due to reasons I explained earlier. You'll need to disassemble the game's code and look for the CRC function itself. That is slightly beyond the scope of this article.
+Once again, the bytes seem to be identical but in little-endian format. We can confirm that the game does use a common CRC32 polynomial algorithm. From there, you can basically use an open-source CRC patcher - just edit/add the offsets, and there you go, you have yourself a CRC patcher for your game. Now that we cracked the checksum of this game, we can move on to the next section. Keep in mind that not all games will be easy with this method due to reasons I explained earlier. You'll need to disassemble the game's code and look for the CRC function itself. That is slightly beyond the scope of this article.
 </p>
 
 <h1>
