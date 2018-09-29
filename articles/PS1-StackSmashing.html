@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="ChampionLeake: Finding DSiWare Application Vulnerabilites">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="../stylesheets/stylesheet.css">
+
+    <title>PS1 Savegame Stack-Smashing</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/ChampionLeake">View on GitHub</a>
+
+          <h1 id="project_title"><img src="../avatar.png" width="100" height="100" align="top"> <u>ChampionLeake</u></h1>
+          <h2 id="project_tagline"></h2>
+
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+    <br><br>
+	    <div style="color:#333!important; font-size:3.5em; text-align:center; font-style: bold">PS1 Savegame Stack-Smashing</div>
+      <section id="main_content" class="inner">
+        <h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction:</h1>
+<p>Over the years, there have been multiple vulnerabilities found for many PlayStation consoles and handhelds, like the PSP, PS Vita (and the PSTV, its miniaturised console counterpart), PS2, PS3, etc. Looking at how the original Sony PlayStation has been cracked (ASM ROMhacks, CD-Drive burning and POPS), there were no write-ups detailing the process of stack-smashing the savegames themselves on official retail discs.  
+<br>
+<br>
+But today, I wanted to share how I found stack smash vulnerabilities in savegames on the original PlayStation. This guide will also teach you the basics of finding flaws in games that run on MIPS processors. Without further ado, let's begin :D</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Before we start:</h1>
+<p>You need know some things before you get started. Otherwise, you'll be going in blind doing this stuff.
+<ul>
+<li>A crash isn't necessarily exploitable (as noted in my past write-up). A crash might be exploitable, depending on what's being overwritten or what's being messed with</li>
+<li>I suggest that you look up how stack-smashing works. To save time, <a href-"http://lmgtfy.com/?q=how+does+stack+smashing+work">let me Google that for you</a>.</li>
+<li>Know that PS1 games are compiled to <a href="https://en.wikipedia.org/wiki/MIPS_architecture">MIPS machine language</a>. We'll mainly be focusing on getting control of the register $ra/r31, which is our return address. You can find more details on these registers <a href="https://en.wikipedia.org/wiki/MIPS_architecture">here</a>!</li>
+<li>Most or almost all PS1 games do not use checksums, nor do they have any type of ASLR (as far as I know).</li>
+<li>Some overflows in games can turn into integer overflows, which would be a bit of a pain to deal with but they're still exploitable (integer overflows will not be covered in this write-up).
+</ul>
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Tools I used:</h1>
+<p>Now let's move on! You'll need the right tools to be able to get through this write-up if you're following along. Here are the tools I used: 
+<ul>
+<li><a href="https://problemkaputt.de/psx.htm">no$psx</a> - A really useful emulator for the original PlayStation with debugging capabilities.</li>
+<li><a href="https://mh-nexus.de/en/hxd/">HxD</a> - I use this hex editor a lot, and it has helpful analysis features that we'll use in this guide.</li>
+<li>PS1 games - Of course you're going to need a game to do some research - one that you obtained a legitimate backup of by dumping yourself, of course :P</li>
+</ul>
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Picking a target:</h1>
+<p>For the sake of this article, we'll be looking for potential stack-smashing vulnerabilities. I usually start with games that have profile names or some type of username input like cars, clubs names, etc. It doesn't have to be strictly profile names, and there are some games that allow putting in your name if you achieve a high-score. Memory card names are another possible attack vector. Even if the string is short, you can still try. 
+<br><br>
+So, I'm going to be using the game "Castlevania Chronicles" (This game is really good and you should actually play it) since there's 2 ways to actually stack-smash this game. So remember what to do:
+<ul>
+<li>Look for profiles that allow you to set a custom name.</li>
+<li>Look for games that allow you to set a custom name on achieving a high score.</li>
+<li>Don't just edit a section of the save if you don't know what it's used for. Doing so may corrupt the save itself.</li>
+</ul>
+It shouldn't be a challenge to pick a title to observe. If a game has user-inputs like names, you should be good to go.
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Attempting an overflow:</h1>
+<p>Now that you have the things you need, you are now ready to go ahead and edit start messing with savegames. Castlevania Chronicles comes with the Arranged/Original versions of the game. Both have separate profile name entities which makes it a dual win if you wanted exploit both versions of the game. If one doesn't work, there's a chance that the other will work.
+<center><img src="../articles/assets/PS1/NO$PSX-ScreenShot.JPG"></center>
+I'll be looking over the 'Original' version of the game since it's more accessible than the arranged version. As mentioned before, I am able to compose a username string for my profile in the 'Original' version. Let's now look for the "AAAAAAAA" string in the memory card save.
+<br><br>
+<center><img src="../articles/assets/PS1/HxD-ScreenShot.JPG"></center>
+NO$PSX stores memory card saves in the 'MEMCARD' directory. Most saves will have the '.mcd' extension. Close NO$PSX and open the corresponding memory card save in <a href="https://mh-nexus.de/en/hxd/">HxD</a>. Taking a look at the save, we were able to find our profile name.
+<br><br>
+Since the PS1 doesn't really have any checksums, you can pretty much freely edit the save. Let's start with a large string and see what happens when we open it in NO$PSX. We'll simply narrow things down to letters to pinpont what's overflowing and where.
+<center><img src="../articles/assets/PS1/Initial-Overflow-ScreenShot.JPG"></center>
+From the screenshot above, we'll run this memory save in NO$PSX. We'll see if it crashes and we'll take a look at the CPU registers to see that $ra/r31 is being overwritten with our long string. If you notice that the game just crashes and that the NO$PSX exception doesn't pop-up, you might want to pause the emulator itself and look at the CPU registers that way. If this still doesn't work, the game will have encountered a fatal crash and you might've overwritten too much. It's best to narrow things down 1 byte to another. Overflowing too much of the stack will just do random things like NOP(s).
+<br><br><br>
+Looking at the screenshot, we were given an exception error in NO$PSX!
+<center><img src="../articles/assets/PS1/NO$PSX-Overflow.JPG"></center>
+Our profile name has overflown some of the stack registers and the main target, $ra/r31, has been overwritten as well with our FF(s). This game is vulnerable :D!
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Refining the Return Address:</h1>
+<p>Okay, so now we know that our game is vulnerable, let's refine our string to find the where the return address is being overwritten. This is a simple procedure since all you're doing is simplifiying the string. So what I did for this game is that I rewrote part of the string with 0x20 (the ' ' character for those of you that haven't memorised the ASCII encoding scheme) and focused on the FF(s). For simplicity, I'll rewrite those FF(s) to numeric hexidecimals. This should be enough to pinpoint where our return should be placed as shown below.
+<center><img src="../articles/assets/PS1/HxD-ScreenShot-2.JPG"></center>
+It doesn't matter if you do either numeric or alphabetical hexidecimals, as long as you can easily pinpoint where the return address gets overwritten, you should be fine. 
+<br><br>
+Let's now run this in NO$PSX and see what we get. Also, remember that the CPU registers are 4 bytes long. As the game runs, our refined string should be read in the return address. From there, we have basically what we needed to overwrite.
+<br><br><br>
+And what do you see... if you look at the register?
+<center><img src="../articles/assets/PS1/NO$PSX-Return-Address_FOUND.JPG"></center>
+$ra/r31, it's being overwritten with 0x55554444. But you should also note that it's displayed as little-endian. Our original input was 0x44445555, so it's been reversed. Always keep that in mind. But moving on, we now know where our return address is being overwritten.
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Defining our Return Address:</h1>
+<p>Let's go back into <a href="https://mh-nexus.de/en/hxd/">HxD</a> to trail our return address.
+<center><img src="../articles/assets/PS1/HxD-ScreenShot-3.JPG"></center>
+So once again, we replaced the unnecessary bytes with 0x20 to keep things clean and rewrote the 4 bytes with 0x58 (translates to 'X'). We can apply this to a real MIPS exploit to jump to our payload and start running unsigned code. 
+<br><br>
+This won't be covered in this writeup since similar jump addresses can be explained. Plus, real code execution hasn't been achieved yet while I was doing this. But let's save the memory save and head right back into NO$PSX.
+<center><img src="../articles/assets/PS1/NO$PSX-Jump-Address.JPG"></center>
+Once you trigger the overflow again, you should be greated with something similar you placed at the jump address. We have full control over the return address and can jump to anywhere in the savegame. We used our own bytes to overwrite the return-address.
+<br><br>
+As mentioned before, this can be used to jump to our payload if we wanted to get demo code working. But now, we can call this simple exploit "CastleSploit" :D.
+</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Closing:</h1>
+<p>Hopefully this article/writeup gave you an overview on stack smashing games running on MIPS processors. Eventually, I would like to see this being used in action to actually execute some demo code. Hopefully I can get this to work on my own as well and update this guide if needed. Also, this can be applied to the PSP since its games are also coded for MIPS processors. You can find neat writeups on those somewhere. 
+<br><br>
+If you have any questions, feel free to hit me up on Twitter <a href="https://twitter.com/ChampionLeake79">@ChampionLeake79</a> and I'll respond to you as fast as I can. Happpy hacking!! :D</p>
+
+<h1>
+<a id="hello-there" class="anchor" href="#hello-there" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits:</h1>
+I would like to thank all of the following:
+<ul>
+<li><a href="https://github.com/Jhynjhiruu">Jhynjhiruu</a> - Your friendly neighbourhood Grammarly™. Big thanks for improving the grammar (note: there's only so much that can be done; you should have seen this before I started!).</li>
+<li><a href="https://twitter.com/AcidSnakeDev">@AcidSnakeDev</a>, <a href="https://twitter.com/freakler94">@freakler94</a>, <a href="https://twitter.com/@qwikrazor87">@qwikrazor87</a>- Inspiriation on Sony PSP (PS1-mini hacking)</li>
+<li><a href="https://twitter.com/St4rkDev">St4rkDev</a> - Helpful friend in using integer overflows as a way to take over some registers</li>
+<li>Everyone else who contributed to giving me helpful advice</li>
+</ul>
+If you're not on this list and I forgot to add you, let me know.
+      </section>
+    </div>
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+    
+  </body>
+</html>
