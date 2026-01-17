@@ -28,9 +28,6 @@ plugins:
   - jekyll-seo-tag
   # - jemoji #Uncomment this to allow emoji in your post
 
-# Permalinks
-theme:      tale
-
 permalink:      /:year-:month-:day/:title
 paginate:       5
 
