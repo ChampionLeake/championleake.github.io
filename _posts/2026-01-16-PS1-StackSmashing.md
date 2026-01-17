@@ -10,7 +10,7 @@ This article will go over how one can discover and exploit stack smash vulnerabi
 <hr><br>
 
 # Before we start:
-This is a rewrite of my previous **"PS1 Savegame Stack-Smashing"** article from 2018. As my experience in console exploitation grown, I felt it was necessary to present a refined version of what was previously written.<br><br>
+This is a rewrite of my previous **["PS1 Savegame Stack-Smashing"](https://championleake.github.io/blog/PS1-StackSmashing/)** article from 2018. As my experience in console exploitation grown, I felt it was necessary to present a refined version of what was previously written.<br><br>
 This article shouldn't be taken as a step-by-step guide. It's merely a documentation of my workflow when it comes to discovering vulnerabilities for the PS1.<br><br>
 This article also assumes that you have basic knowledge of programming along with computing.<br><br>
 
