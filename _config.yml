@@ -1,17 +1,15 @@
 # Site settings
-title:          Tale
-description:    "Minimal Jekyll theme for storytellers"
-baseurl:        "/tale"
-url:            "https://chesterhow.github.io"
+title:          ChampionLeake
+description:    "Leake's DevBlog"
+url:            "https://championleake.github.io"
 
 # Google Analytics
 google_analytics: UA—XXXXXXXX-X
 
 # Author
 author:
-  name:         Chester How
-  url:          https://chester.how
-  email:        chesterhow@gmail.com
+  name:         ChampionLeake
+  url:          https://championleake.github.io
 
 # Build settings
 markdown:       kramdown
@@ -31,6 +29,8 @@ plugins:
   # - jemoji #Uncomment this to allow emoji in your post
 
 # Permalinks
+theme:      tale
+
 permalink:      /:year-:month-:day/:title
 paginate:       5
 
