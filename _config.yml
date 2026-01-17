@@ -1,7 +1,7 @@
 # Site settings
 title:          ChampionLeake
 description:    "Leake's DevBlog"
-url:            "https://championleake.github.io"
+url:            "https://championleake.github.io/"
 
 # Google Analytics
 google_analytics: UA—XXXXXXXX-X
@@ -9,7 +9,7 @@ google_analytics: UA—XXXXXXXX-X
 # Author
 author:
   name:         ChampionLeake
-  url:          https://championleake.github.io
+  url:          https://championleake.github.io/
 
 # Build settings
 markdown:       kramdown
